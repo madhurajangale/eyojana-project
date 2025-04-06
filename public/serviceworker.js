@@ -47,6 +47,7 @@ self.addEventListener("push", (event) => {
 });
 
 // SYNC EVENT
+// SYNC EVENT
 self.addEventListener("sync", (event) => {
   console.log("[Service Worker] Sync event triggered:", event.tag);
 
@@ -59,9 +60,20 @@ self.addEventListener("sync", (event) => {
           "Content-Type": "application/json"
         }
       })
-        .then((res) => res.json())
-        .then((data) => console.log("Sync successful:", data))
+        .then((res) => {
+          if (!res.ok) throw new Error("Network response was not ok");
+          return res.text(); // Use text to avoid crash if body is empty
+        })
+        .then((text) => {
+          try {
+            const data = JSON.parse(text); // Try parsing only if there's content
+            console.log("Sync successful:", data);
+          } catch (e) {
+            console.warn("Response not valid JSON:", text);
+          }
+        })
         .catch((err) => console.error("Sync failed:", err))
     );
   }
 });
+
