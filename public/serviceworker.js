@@ -2,15 +2,19 @@ const staticCacheName = "eyojana-v1";
 
 // INSTALL EVENT
 self.addEventListener("install", (event) => {
-  console.log("[Service Worker] Installing...");
   event.waitUntil(
-    caches.open(staticCacheName).then((cache) => {
-      return cache.addAll(["/"]); // Cache homepage
+    caches.open("eyojana-static").then((cache) => {
+      return cache.addAll([
+        "/",
+        "/index.html",
+        "/styles.css",
+        "/app.js",
+        "/offline.html"
+      ]);
     })
   );
   self.skipWaiting();
 });
-
 // ACTIVATE EVENT
 self.addEventListener("activate", (event) => {
   console.log("[Service Worker] Activated");
@@ -21,10 +25,27 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   event.respondWith(
     caches.match(event.request).then((cachedRes) => {
-      return cachedRes || fetch(event.request);
+      // Return cached response if found
+      if (cachedRes) {
+        console.log("[Service Worker] Serving from cache:", event.request.url);
+        return cachedRes;
+      }
+
+      // Otherwise, fetch from network and cache it
+      return fetch(event.request).then((networkRes) => {
+        return caches.open("eyojana-dynamic").then((cache) => {
+          cache.put(event.request, networkRes.clone());
+          console.log("[Service Worker] Fetched & cached:", event.request.url);
+          return networkRes;
+        });
+      });
+    }).catch(() => {
+      // Optional: return offline fallback page
+      return caches.match("/offline.html");
     })
   );
 });
+
 
 // PUSH EVENT
 self.addEventListener("push", (event) => {
