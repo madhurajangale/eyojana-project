@@ -50,27 +50,25 @@ self.addEventListener("push", (event) => {
     if (event.data) {
       const text = event.data.text();
       try {
-        data = JSON.parse(text);
+        data = JSON.parse(text); // Parse as JSON if possible
       } catch {
-        data = { title: "Notification", body: text };
+        data = { title: "Notification", body: text }; // Fallback to plain text
       }
     }
   } catch (err) {
     console.error("[SW] Error parsing push data", err);
   }
 
+  // Only Title and Message fields
   const title = data.title || "E-Yojana Alert!";
   const options = {
     body: data.body || "You have a new update.",
-    icon: "/icons/icon-192.png",
-    badge: "/icons/badge-72x72.png",
-    data: {
-      url: data.url || "/"
-    }
+    // No icon and badge fields
   };
 
   console.log("[SW] Showing notification:", title, options);
 
+  // Show notification only if permission is granted
   if (Notification.permission === "granted") {
     event.waitUntil(self.registration.showNotification(title, options));
   } else {
