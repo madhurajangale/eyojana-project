@@ -69,16 +69,11 @@ self.addEventListener("push", (event) => {
   console.log("[SW] Showing notification:", title, options);
 
   // Show notification only if permission is granted
-  Notification.requestPermission().then(p => {
-  if (p === 'granted') {
-    navigator.serviceWorker.ready.then(reg => {
-      reg.showNotification('Direct Test', { body: 'If you see this, notifications work.' });
-    });
+  if (Notification.permission === "granted") {
+    event.waitUntil(self.registration.showNotification(title, options));
   } else {
-    console.warn('Permission is not granted:', p);
+    console.warn("[SW] Notification permission not granted.");
   }
-});
-
 });
 
 // NOTIFICATION CLICK EVENT
