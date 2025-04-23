@@ -15,6 +15,7 @@ self.addEventListener("install", (event) => {
   );
   self.skipWaiting();
 });
+
 // ACTIVATE EVENT
 self.addEventListener("activate", (event) => {
   console.log("[Service Worker] Activated");
@@ -25,89 +26,88 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   event.respondWith(
     caches.match(event.request).then((cachedRes) => {
-      // Return cached response if found
       if (cachedRes) {
-        console.log("[Service Worker] Serving from cache:", event.request.url);
+        console.log("[SW] Serving from cache:", event.request.url);
         return cachedRes;
       }
-
-      // Otherwise, fetch from network and cache it
       return fetch(event.request).then((networkRes) => {
         return caches.open("eyojana-dynamic").then((cache) => {
           cache.put(event.request, networkRes.clone());
-          console.log("[Service Worker] Fetched & cached:", event.request.url);
+          console.log("[SW] Fetched & cached:", event.request.url);
           return networkRes;
         });
       });
-    }).catch(() => {
-      // Optional: return offline fallback page
-      return caches.match("/offline.html");
-    })
+    }).catch(() => caches.match("/offline.html"))
   );
 });
 
-
 // PUSH EVENT
 self.addEventListener("push", (event) => {
-  console.log("[Service Worker] Push Received");
+  console.log("[SW] Push Received");
 
   let data = {};
   try {
     if (event.data) {
-      const text = event.data.text(); // First get as plain text
+      const text = event.data.text();
       try {
-        data = JSON.parse(text); // Try parsing as JSON
+        data = JSON.parse(text);
       } catch {
-        data = { title: "Notification", message: text }; // Fallback for plain strings
+        data = { title: "Notification", body: text };
       }
     }
   } catch (err) {
-    console.error("Error parsing push data", err);
+    console.error("[SW] Error parsing push data", err);
   }
 
   const title = data.title || "E-Yojana Alert!";
   const options = {
-    body: data.message || "You have a new update.",
+    body: data.body || "You have a new update.",
     icon: "/icons/icon-192.png",
-    badge: "/icons/badge-72x72.png"
+    badge: "/icons/badge-72x72.png",
+    data: {
+      url: data.url || "/"
+    }
   };
+
+  console.log("[SW] Showing notification:", title, options);
 
   if (Notification.permission === "granted") {
     event.waitUntil(self.registration.showNotification(title, options));
   } else {
-    console.warn("Notification permission not granted.");
+    console.warn("[SW] Notification permission not granted.");
   }
 });
 
+// NOTIFICATION CLICK EVENT
+self.addEventListener("notificationclick", (event) => {
+  console.log("[SW] Notification click received:", event.notification.data);
+  event.notification.close();
+  const url = event.notification.data.url;
+  event.waitUntil(clients.openWindow(url));
+});
 
-// SYNC EVENT
 // SYNC EVENT
 self.addEventListener("sync", (event) => {
-  console.log("[Service Worker] Sync event triggered:", event.tag);
-
+  console.log("[SW] Sync event triggered:", event.tag);
   if (event.tag === "yojana-sync") {
     event.waitUntil(
       fetch("https://jsonplaceholder.typicode.com/posts", {
         method: "POST",
         body: JSON.stringify({ synced: true }),
-        headers: {
-          "Content-Type": "application/json"
-        }
+        headers: { "Content-Type": "application/json" }
       })
         .then((res) => {
           if (!res.ok) throw new Error("Network response was not ok");
-          return res.text(); // Use text to avoid crash if body is empty
+          return res.text();
         })
         .then((text) => {
           try {
-            const data = JSON.parse(text); // Try parsing only if there's content
-            console.log("Sync successful:", data);
-          } catch (e) {
-            console.warn("Response not valid JSON:", text);
+            console.log("[SW] Sync successful:", JSON.parse(text));
+          } catch {
+            console.warn("[SW] Sync response not valid JSON:", text);
           }
         })
-        .catch((err) => console.error("Sync failed:", err))
+        .catch((err) => console.error("[SW] Sync failed:", err))
     );
   }
 });
-
