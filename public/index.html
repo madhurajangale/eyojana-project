@@ -21,22 +21,26 @@
       if ('serviceWorker' in navigator) {
         try {
           await navigator.serviceWorker.register('serviceworker.js');
-          console.log('Service Worker Registered');
+          console.log('✅ Service Worker Registered');
         } catch (e) {
-          console.log('SW registration failed:', e);
+          console.log('❌ SW registration failed:', e);
         }
       }
     }
 
     // Request Notification Permission
     function askNotificationPermission() {
-  if ('Notification' in window) {
-    Notification.requestPermission().then((permission) => {
-      console.log("Permission status:", permission);
-    });
-  }
-}
-
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission().then(permission => {
+          console.log("🔔 Notification permission status:", permission);
+          if (permission === 'granted') {
+            alert("✅ Notifications enabled!");
+          } else {
+            alert("❌ Notifications denied.");
+          }
+        });
+      }
+    }
   </script>
 
   <meta charset="utf-8" />
