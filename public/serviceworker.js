@@ -50,9 +50,17 @@ self.addEventListener("fetch", (event) => {
 // PUSH EVENT
 self.addEventListener("push", (event) => {
   console.log("[Service Worker] Push Received");
+
   let data = {};
   try {
-    data = event.data.json();
+    if (event.data) {
+      const text = event.data.text(); // First get as plain text
+      try {
+        data = JSON.parse(text); // Try parsing as JSON
+      } catch {
+        data = { title: "Notification", message: text }; // Fallback for plain strings
+      }
+    }
   } catch (err) {
     console.error("Error parsing push data", err);
   }
@@ -64,8 +72,13 @@ self.addEventListener("push", (event) => {
     badge: "/icons/badge-72x72.png"
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
+  if (Notification.permission === "granted") {
+    event.waitUntil(self.registration.showNotification(title, options));
+  } else {
+    console.warn("Notification permission not granted.");
+  }
 });
+
 
 // SYNC EVENT
 // SYNC EVENT
