@@ -30,18 +30,13 @@
 
     // Request Notification Permission
     function askNotificationPermission() {
-      if ('Notification' in window) {
-        Notification.requestPermission().then((permission) => {
-          if (permission === 'granted') {
-            console.log('Notification permission granted.');
-          } else if (permission === 'denied') {
-            console.warn('Notification permission denied.');
-          } else {
-            console.log('Notification permission not yet granted.');
-          }
-        });
-      }
-    }
+  if ('Notification' in window) {
+    Notification.requestPermission().then((permission) => {
+      console.log("Permission status:", permission);
+    });
+  }
+}
+
   </script>
 
   <meta charset="utf-8" />
